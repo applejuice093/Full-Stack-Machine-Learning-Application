@@ -1,0 +1,17 @@
+{
+  "classification": [
+    "logistic_regression",
+    "decision_tree",
+    "random_forest",
+    "knn",
+    "naive_bayes",
+    "svm"
+  ],
+  "regression": [
+    "linear_regression",
+    "polynomial_regression",
+    "decision_tree_regressor",
+    "random_forest_regressor",
+    "svr"
+  ]
+}

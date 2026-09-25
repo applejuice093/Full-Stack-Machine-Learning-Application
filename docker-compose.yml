@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: mlapp
+      POSTGRES_PASSWORD: mlapp
+      POSTGRES_DB: mlapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+
+volumes:
+  postgres_data:

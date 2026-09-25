@@ -1,0 +1,12 @@
+{
+  "name": "ml-web-app",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:ml": "ml-service\\.venv\\Scripts\\python -m uvicorn app.main:app --reload --app-dir ml-service --port 8000",
+    "test:backend": "npm test --prefix backend",
+    "test:ml": "ml-service\\.venv\\Scripts\\python -m pytest ml-service/tests"
+  }
+}

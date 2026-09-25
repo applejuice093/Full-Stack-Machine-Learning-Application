@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --paper: #f7f6f2;
+    --ink: #171717;
+    --ink-soft: #66645f;
+    --ink-muted: #85827b;
+    --line: #d8d6cf;
+    --surface: #ffffff;
+    --surface-subtle: #f1efe9;
+    --mark: #9a927f;
+    --decor: #ddd9d0;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: #ffffff;
+    --secondary: var(--surface);
+    --secondary-foreground: var(--ink);
+    --muted: #f1efe9;
+    --muted-foreground: #66645f;
+    --accent: var(--mark);
+    --accent-foreground: var(--ink);
+    --destructive: #7a3e32;
+    --border: var(--line);
+    --input: var(--line);
+    --ring: var(--mark);
+    --chart-1: #9b927f;
+    --chart-2: #6d6b65;
+    --chart-3: #181817;
+    --chart-4: #d8d6cf;
+    --chart-5: #c4c0b6;
+    --radius: 0.75rem;
+    --sidebar: var(--paper);
+    --sidebar-foreground: var(--ink);
+    --sidebar-primary: var(--ink);
+    --sidebar-primary-foreground: var(--paper);
+    --sidebar-accent: var(--surface);
+    --sidebar-accent-foreground: var(--ink);
+    --sidebar-border: var(--line);
+    --sidebar-ring: var(--mark);
+    color-scheme: light;
+}
+
+.dark {
+    --background: #181817;
+    --foreground: #f6f5f1;
+    --card: #222220;
+    --card-foreground: #f6f5f1;
+    --popover: #222220;
+    --popover-foreground: #f6f5f1;
+    --primary: #f6f5f1;
+    --primary-foreground: #181817;
+    --secondary: #222220;
+    --secondary-foreground: #f6f5f1;
+    --muted: #2a2926;
+    --muted-foreground: #b7b4ac;
+    --accent: #9b927f;
+    --accent-foreground: #181817;
+    --destructive: #e7b2a6;
+    --border: #3a3834;
+    --input: #3a3834;
+    --ring: #9b927f;
+    --chart-1: #9b927f;
+    --chart-2: #d8d6cf;
+    --chart-3: #f6f5f1;
+    --chart-4: #6d6b65;
+    --chart-5: #c4c0b6;
+    --sidebar: #181817;
+    --sidebar-foreground: #f6f5f1;
+    --sidebar-primary: #f6f5f1;
+    --sidebar-primary-foreground: #181817;
+    --sidebar-accent: #222220;
+    --sidebar-accent-foreground: #f6f5f1;
+    --sidebar-border: #3a3834;
+    --sidebar-ring: #9b927f;
+}
+
+.changa-one-regular {
+  font-family: "Changa One", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.changa-one-regular-italic {
+  font-family: "Changa One", sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.roboto-mono {
+  font-family: "Roboto Mono", ui-monospace, monospace;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.text-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply overflow-x-clip bg-background text-foreground;
+    }
+  html {
+    font-family: "Geist Variable", "Geist", sans-serif;
+    font-weight: 400;
+    scroll-behavior: smooth;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

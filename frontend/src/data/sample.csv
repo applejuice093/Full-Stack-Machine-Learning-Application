@@ -1,0 +1,13 @@
+rooms,year_built,neighborhood,lot_sqft,price,sold
+3,1998,north,4200,310000,yes
+2,1974,east,1800,198500,no
+4,2012,west,6100,540000,yes
+3,2004,south,3900,365000,yes
+1,1962,east,900,142000,no
+5,2018,north,7400,690000,yes
+2,1988,west,2100,255000,no
+4,1995,south,5000,410000,yes
+3,1979,north,3300,276000,no
+6,2021,west,8900,820000,yes
+2,2001,east,1600,221000,yes
+4,1983,south,4700,338000,no
