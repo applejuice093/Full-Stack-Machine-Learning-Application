@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChartFrame } from "./ChartFrame";
+import { apiUrl } from "@/lib/api";
 
 const titles: Record<string, string> = {
   confusion: "Confusion matrix heatmap",
@@ -14,7 +15,7 @@ export function EvaluationCharts({ runId }: { runId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(`/visualize/evaluation/${runId}`)
+    void fetch(apiUrl(`/visualize/evaluation/${runId}`))
       .then(async (response) => {
         const body = (await response.json()) as { images?: Record<string, string>; detail?: string };
         if (!response.ok) throw new Error(body.detail ?? "The evaluation charts could not be loaded.");

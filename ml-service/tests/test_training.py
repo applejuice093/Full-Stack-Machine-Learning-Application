@@ -5,7 +5,7 @@ import pytest
 from app.training.store import load_table, save_table
 from app.visualization.plots import dataset_figures, load_evaluation_figures
 from app.training.train import TrainError, predict_row, prepare_table, split_table, train_dataset
-from pathlib import Path
+from app.core.storage import MODELS_DIR
 
 
 def _classification_rows() -> list[list[str]]:
@@ -61,7 +61,7 @@ def test_scaler_learns_from_the_training_split_only() -> None:
     stored = load_table(dataset_id)
     prepared, _, _ = prepare_table(stored, ["row", "x"], "label")
     x_train, _, _, _ = split_table(prepared, ["row", "x"], "label", "classification", 0.25, 1)
-    artifact = joblib.load(Path(__file__).resolve().parents[2] / "models" / f"{summary['runId']}.joblib")
+    artifact = joblib.load(MODELS_DIR / f"{summary['runId']}.joblib")
     learned = artifact["pipeline"].named_steps["preprocess"].named_transformers_["num"].named_steps["scaler"].mean_[1]
     train_mean = pd.to_numeric(x_train["x"]).mean()
     full_mean = pd.to_numeric(prepared["x"]).mean()

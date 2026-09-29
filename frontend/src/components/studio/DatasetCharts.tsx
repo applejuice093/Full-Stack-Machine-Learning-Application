@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStudio } from "@/studio/StudioContext";
 import { ChartFrame } from "./ChartFrame";
+import { apiUrl } from "@/lib/api";
 
 type Distribution = {
   name: string;
@@ -30,7 +31,7 @@ export function DatasetCharts() {
     }
     let cancelled = false;
     setError(null);
-    void fetch("/visualize/dataset", {
+    void fetch(apiUrl("/visualize/dataset"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ datasetId: dataset.datasetId }),

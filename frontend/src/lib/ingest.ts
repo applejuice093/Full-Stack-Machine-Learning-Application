@@ -1,6 +1,8 @@
+import { apiUrl, mlUrl } from "@/lib/api";
 import { parseCsv, readCsvFile, type ParsedDataset } from "@/lib/csv";
 
-const MAX_BYTES = 8 * 1024 * 1024;
+// Vercel Functions reject request bodies above 4.5 MB.
+const MAX_BYTES = 4 * 1024 * 1024;
 
 type ParseResponse = {
   filename: string;
@@ -28,7 +30,7 @@ export async function readDataset(file: File, member?: string): Promise<ParsedDa
     throw new Error("This file is empty.");
   }
   if (file.size > MAX_BYTES) {
-    throw new Error("This file is larger than 8 MB. Use a smaller file.");
+    throw new Error("This file is larger than 4 MB. Use a smaller file.");
   }
 
   const remote = await readFromServices(file, member);
@@ -42,7 +44,7 @@ export async function readDataset(file: File, member?: string): Promise<ParsedDa
 }
 
 async function readFromServices(file: File, member?: string): Promise<ParsedDataset | null> {
-  const endpoints = ["/datasets/parse", "/dataset/parse"];
+  const endpoints = [apiUrl("/datasets/parse"), mlUrl("/dataset/parse")];
   let unreachable = true;
 
   for (const endpoint of endpoints) {
@@ -90,7 +92,7 @@ async function readFromServices(file: File, member?: string): Promise<ParsedData
 
 export async function rememberDataset(dataset: ParsedDataset): Promise<ParsedDataset> {
   try {
-    const response = await fetch("/datasets/store", {
+    const response = await fetch(apiUrl("/datasets/store"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

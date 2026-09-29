@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import re
 import time
-from pathlib import Path
 from uuid import uuid4
 
 import joblib
@@ -22,12 +21,11 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 
+from app.core.storage import MODELS_DIR, fetch, persist
 from app.training.pipeline import build_pipeline, column_roles
 from app.training.registry import default_search, estimator, model_task, search_space
 from app.training.store import load_table
 from app.visualization.plots import save_evaluation_figures
-
-MODELS_DIR = Path(__file__).resolve().parents[3] / "models"
 
 
 class TrainError(Exception):
@@ -183,7 +181,9 @@ def train_dataset(
         "numeric": numeric,
         "categorical": categorical,
     }
-    joblib.dump(artifact, MODELS_DIR / f"{run_id}.joblib")
+    artifact_path = MODELS_DIR / f"{run_id}.joblib"
+    joblib.dump(artifact, artifact_path)
+    persist(artifact_path)
     figures = save_evaluation_figures(run_id, task, y_test, prediction, best, x_test, evaluation)
     summary = {
         "runId": run_id,
@@ -213,7 +213,9 @@ def train_dataset(
             "testSize": test_size,
         },
     }
-    (MODELS_DIR / f"{run_id}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    summary_path = MODELS_DIR / f"{run_id}.json"
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    persist(summary_path)
     return summary
 
 
@@ -258,7 +260,7 @@ def predict_row(run_id: str, values: dict) -> dict:
     if not re.fullmatch(r"^[a-f0-9]{32}$", run_id):
         raise TrainError("Unknown trained model.")
     path = MODELS_DIR / f"{run_id}.joblib"
-    if not path.exists():
+    if not fetch(path):
         raise TrainError("That trained model is no longer available. Train it again.")
     artifact = joblib.load(path)
     features = artifact["features"]

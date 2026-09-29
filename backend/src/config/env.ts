@@ -5,7 +5,10 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().optional(),
-  ML_SERVICE_URL: z.string().default("http://localhost:8000"),
+  ML_SERVICE_URL: z
+    .string()
+    .default("http://localhost:8000")
+    .transform((url) => url.replace(/\/+$/, "")),
   GROQ_API_KEY: z.string().optional(),
   LANGFUSE_SECRET_KEY: z.string().optional(),
   LANGFUSE_PUBLIC_KEY: z.string().optional(),

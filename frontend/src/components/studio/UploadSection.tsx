@@ -103,7 +103,7 @@ export function UploadSection() {
               <summary className="cursor-pointer">View supported formats</summary>
               <p className="mt-2 max-w-sm leading-relaxed">
                 CSV, TSV, TXT, DAT, XLSX, XLS, XLSM, ARFF, LIBSVM, JSON, JSONL, Parquet,
-                Feather, Arrow, NPY, NPZ, HDF5, MAT, XML, YAML, SAV, DTA, SAS, XPT. Up to 8 MB.
+                Feather, Arrow, NPY, NPZ, HDF5, MAT, XML, YAML, SAV, DTA, SAS, XPT. Up to 4 MB.
               </p>
             </details>
             <input

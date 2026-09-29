@@ -21,7 +21,8 @@ export type ParsedDataset = {
   selectedMember?: string | null;
 };
 
-const MAX_BYTES = 8 * 1024 * 1024;
+// Vercel Functions reject request bodies above 4.5 MB.
+const MAX_BYTES = 4 * 1024 * 1024;
 
 export function readCsvFile(file: File): Promise<ParsedDataset> {
   const name = file.name.trim();
@@ -39,7 +40,7 @@ export function readCsvFile(file: File): Promise<ParsedDataset> {
   }
 
   if (file.size > MAX_BYTES) {
-    return Promise.reject(new Error("This file is larger than 8 MB. Use a smaller CSV."));
+    return Promise.reject(new Error("This file is larger than 4 MB. Use a smaller CSV."));
   }
 
   return new Promise((resolve, reject) => {

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import io
-from pathlib import Path
 
 import matplotlib
 
@@ -13,7 +12,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import roc_curve
 
-MODELS_DIR = Path(__file__).resolve().parents[3] / "models"
+from app.core.storage import MODELS_DIR, fetch, persist
 
 INK = "#171717"
 PAPER = "#F7F6F2"
@@ -60,9 +59,9 @@ def load_evaluation_figures(run_id: str) -> dict[str, str]:
     images: dict[str, str] = {}
     for name in ("confusion", "roc", "actual", "residual"):
         path = MODELS_DIR / f"{run_id}-{name}.png"
-        if path.exists():
+        if fetch(path):
             images[name] = base64.b64encode(path.read_bytes()).decode("ascii")
-    if not images and not (MODELS_DIR / f"{run_id}.joblib").exists():
+    if not images and not fetch(MODELS_DIR / f"{run_id}.joblib"):
         raise FileNotFoundError("That trained model is no longer available. Train it again.")
     return images
 
@@ -71,7 +70,9 @@ def _write(run_id: str, name: str, figure) -> None:
     buffer = io.BytesIO()
     figure.savefig(buffer, format="png", dpi=120, bbox_inches="tight", facecolor=PAPER)
     plt.close(figure)
-    (MODELS_DIR / f"{run_id}-{name}.png").write_bytes(buffer.getvalue())
+    path = MODELS_DIR / f"{run_id}-{name}.png"
+    path.write_bytes(buffer.getvalue())
+    persist(path)
 
 
 def _png(figure) -> str:

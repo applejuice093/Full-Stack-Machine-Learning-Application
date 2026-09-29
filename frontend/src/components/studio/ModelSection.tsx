@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { ParsedDataset } from "@/lib/csv";
 import { modelsFor } from "@/lib/models";
 import { useStudio } from "@/studio/StudioContext";
+import { apiUrl } from "@/lib/api";
 
 export type TrainResult = {
   modelId: string;
@@ -151,7 +152,7 @@ export function ModelSection() {
               if (!dataset?.datasetId || !modelId || !task) return;
               setTraining(true);
               setTrainError(null);
-              void fetch("/train", {
+              void fetch(apiUrl("/train"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -314,7 +315,7 @@ export function PredictPanel({
         event.preventDefault();
         setPending(true);
         setError(null);
-        void fetch("/predict", {
+        void fetch(apiUrl("/predict"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ runId, values }),

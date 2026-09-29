@@ -1,19 +1,18 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { env } from "../config/env.js";
 
+// Vercel Functions accept request bodies up to 4.5 MB, so uploads are capped at 4 MB.
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024 },
+  limits: { fileSize: MAX_UPLOAD_BYTES },
 });
 
 export const datasetRouter = Router();
 
-async function forwardJson(
-  req: { body: unknown },
-  res: { status: (code: number) => { type: (value: string) => { send: (body: string) => void } }; json: (body: unknown) => void },
-  path: string,
-) {
+async function forwardJson(req: Request, res: Response, path: string) {
   try {
     const response = await fetch(`${env.ML_SERVICE_URL}${path}`, {
       method: "POST",
@@ -53,7 +52,17 @@ datasetRouter.get("/visualize/evaluation/:runId", async (req, res) => {
   }
 });
 
-datasetRouter.post("/datasets/parse", upload.single("file"), async (req, res) => {
+function uploadSingle(req: Request, res: Response, next: (err?: unknown) => void) {
+  upload.single("file")(req, res, (err: unknown) => {
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ detail: "This file is larger than 4 MB. Use a smaller file." });
+      return;
+    }
+    next(err);
+  });
+}
+
+datasetRouter.post("/datasets/parse", uploadSingle, async (req, res) => {
   if (!req.file) {
     res.status(400).json({ detail: "Choose a file." });
     return;
