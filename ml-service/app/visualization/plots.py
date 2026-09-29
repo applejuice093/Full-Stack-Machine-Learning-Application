@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 
 import matplotlib
 
@@ -19,18 +20,49 @@ PAPER = "#F7F6F2"
 STONE = "#9A927F"
 LINE = "#D8D6CF"
 MAX_DISTRIBUTION_COLUMNS = 12
+# Wide tables make the heatmap/missing-value charts huge and slow (and the JSON response can
+# exceed the 4.5 MB serverless response limit), so cap how many columns they draw.
+MAX_CORRELATION_COLUMNS = 20
+MAX_ANNOTATED_CORRELATION_COLUMNS = 12
+MAX_MISSING_COLUMNS = 30
+
+logger = logging.getLogger(__name__)
 
 
 def dataset_figures(frame: pd.DataFrame) -> dict:
+    """Draw the dataset charts. One failing chart never blocks the others."""
     notes: list[str] = []
-    correlation, correlation_note = _correlation(frame)
-    if correlation_note:
-        notes.append(correlation_note)
-    missing = _missing(frame)
+    distributions = _distributions(frame)
+    if len(frame.columns) > MAX_DISTRIBUTION_COLUMNS:
+        notes.append(f"Showing distributions for the first {MAX_DISTRIBUTION_COLUMNS} of {len(frame.columns)} columns.")
+
+    correlation_png = None
+    try:
+        correlation, correlation_note = _correlation(frame)
+        if correlation_note:
+            notes.append(correlation_note)
+        if correlation is not None:
+            correlation_png = _png(correlation)
+    except Exception:  # pragma: no cover - defensive
+        logger.exception("Correlation chart failed")
+        notes.append("The correlation heatmap could not be drawn for this dataset.")
+        plt.close("all")
+
+    missing_png = None
+    try:
+        missing, missing_note = _missing(frame)
+        if missing_note:
+            notes.append(missing_note)
+        missing_png = _png(missing)
+    except Exception:  # pragma: no cover - defensive
+        logger.exception("Missing-value chart failed")
+        notes.append("The missing-value chart could not be drawn for this dataset.")
+        plt.close("all")
+
     return {
-        "distributions": _distributions(frame),
-        "correlation": _png(correlation) if correlation is not None else None,
-        "missing": _png(missing),
+        "distributions": distributions,
+        "correlation": correlation_png,
+        "missing": missing_png,
         "notes": notes,
     }
 
@@ -92,22 +124,30 @@ def _style_ax(ax) -> None:
 def _distributions(frame: pd.DataFrame) -> list[dict[str, str]]:
     charts: list[dict[str, str]] = []
     for column in list(frame.columns)[:MAX_DISTRIBUTION_COLUMNS]:
-        fig, ax = plt.subplots(figsize=(5.2, 3.4), facecolor="white")
-        _style_ax(ax)
-        numeric = pd.to_numeric(frame[column], errors="coerce")
-        if numeric.notna().mean() >= 0.8:
-            ax.hist(numeric.dropna(), color=STONE, edgecolor=INK, bins=min(10, max(numeric.nunique(), 1)))
-            ax.set_ylabel("Rows", color=INK)
-        else:
-            counts = frame[column].replace("", pd.NA).dropna().astype(str).value_counts().head(8)
-            ax.bar(range(len(counts)), counts.to_numpy(), color=STONE, edgecolor=INK)
-            ax.set_xticks(range(len(counts)))
-            ax.set_xticklabels(list(counts.index), rotation=25, ha="right")
-            ax.set_ylabel("Rows", color=INK)
-        ax.set_title(str(column), color=INK, fontsize=12, pad=8)
-        fig.tight_layout()
-        charts.append({"name": str(column), "image": _png(fig)})
+        try:
+            charts.append({"name": str(column), "image": _distribution(frame, column)})
+        except Exception:  # pragma: no cover - defensive
+            logger.exception("Distribution chart failed for %s", column)
+            plt.close("all")
     return charts
+
+
+def _distribution(frame: pd.DataFrame, column) -> str:
+    fig, ax = plt.subplots(figsize=(5.2, 3.4), facecolor="white")
+    _style_ax(ax)
+    numeric = pd.to_numeric(frame[column], errors="coerce")
+    if numeric.notna().mean() >= 0.8:
+        ax.hist(numeric.dropna(), color=STONE, edgecolor=INK, bins=min(10, max(numeric.nunique(), 1)))
+        ax.set_ylabel("Rows", color=INK)
+    else:
+        counts = frame[column].replace("", pd.NA).dropna().astype(str).value_counts().head(8)
+        ax.bar(range(len(counts)), counts.to_numpy(), color=STONE, edgecolor=INK)
+        ax.set_xticks(range(len(counts)))
+        ax.set_xticklabels(list(counts.index), rotation=25, ha="right")
+        ax.set_ylabel("Rows", color=INK)
+    ax.set_title(str(column), color=INK, fontsize=12, pad=8)
+    fig.tight_layout()
+    return _png(fig)
 
 
 def _correlation(frame: pd.DataFrame):
@@ -115,6 +155,10 @@ def _correlation(frame: pd.DataFrame):
     keep = [column for column in numeric.columns if numeric[column].notna().mean() >= 0.8]
     if len(keep) < 2:
         return None, "Fewer than two numeric columns, so there is no correlation heatmap."
+    note = None
+    if len(keep) > MAX_CORRELATION_COLUMNS:
+        note = f"The correlation heatmap shows the first {MAX_CORRELATION_COLUMNS} of {len(keep)} numeric columns."
+        keep = keep[:MAX_CORRELATION_COLUMNS]
     size = max(6.0, 0.85 * len(keep) + 2)
     fig, ax = plt.subplots(figsize=(size, size * 0.85), facecolor="white")
     matrix = numeric[keep].corr()
@@ -130,9 +174,12 @@ def _correlation(frame: pd.DataFrame):
         linecolor="white",
         cbar_kws={"shrink": 0.8, "label": "Correlation"},
     )
-    for row_index, row_name in enumerate(matrix.index):
+    annotate = len(keep) <= MAX_ANNOTATED_CORRELATION_COLUMNS
+    for row_index, row_name in enumerate(matrix.index if annotate else []):
         for column_index, column_name in enumerate(matrix.columns):
             value = float(matrix.loc[row_name, column_name])
+            if np.isnan(value):
+                continue
             ax.text(
                 column_index + 0.5,
                 row_index + 0.5,
@@ -146,12 +193,16 @@ def _correlation(frame: pd.DataFrame):
     ax.set_xticklabels(ax.get_xticklabels(), rotation=40, ha="right")
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     fig.tight_layout()
-    return fig, None
+    return fig, note
 
 
 def _missing(frame: pd.DataFrame):
     missing = frame.astype(str).apply(lambda series: series.str.strip().eq("") | series.str.lower().isin({"nan", "none", "<na>"}))
     counts = missing.sum().astype(int)
+    note = None
+    if len(counts) > MAX_MISSING_COLUMNS:
+        note = f"The missing-value chart shows the {MAX_MISSING_COLUMNS} columns with the most empty cells."
+        counts = counts.sort_values(ascending=False, kind="stable").head(MAX_MISSING_COLUMNS)
     height = max(3.2, 0.55 * len(counts) + 1.2)
     fig, ax = plt.subplots(figsize=(7.2, height), facecolor="white")
     _style_ax(ax)
@@ -166,7 +217,7 @@ def _missing(frame: pd.DataFrame):
     if int(counts.max()) == 0:
         ax.text(0.5, 0.5, "No empty cells", transform=ax.transAxes, ha="center", va="center", color=INK)
     fig.tight_layout()
-    return fig
+    return fig, note
 
 
 def _confusion(evaluation: dict):

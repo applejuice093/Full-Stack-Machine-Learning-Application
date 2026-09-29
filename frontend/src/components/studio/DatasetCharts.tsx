@@ -20,34 +20,33 @@ export function DatasetCharts() {
   const [figures, setFigures] = useState<Figures | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const returnScroll = useRef(0);
 
   useEffect(() => {
     setSelected(null);
+    // Drop the previous dataset's charts right away so stale graphs never linger.
+    setFigures(null);
+    setError(null);
     if (!dataset?.datasetId) {
-      setFigures(null);
+      setLoading(false);
       return;
     }
-    let cancelled = false;
-    setError(null);
-    void fetch(apiUrl("/visualize/dataset"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ datasetId: dataset.datasetId }),
-    })
-      .then(async (response) => {
-        const body = (await response.json()) as Figures & { detail?: string };
-        if (!response.ok) throw new Error(body.detail ?? "The dataset charts could not be drawn.");
-        if (!cancelled) setFigures(body);
-      })
+    const controller = new AbortController();
+    setLoading(true);
+    void loadFigures(dataset.datasetId, controller.signal)
+      .then((body) => setFigures(body))
       .catch((caught: unknown) => {
-        if (!cancelled) setError(caught instanceof Error ? caught.message : "The dataset charts could not be drawn.");
+        if (controller.signal.aborted) return;
+        setError(caught instanceof Error ? caught.message : "The dataset charts could not be drawn.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [dataset?.datasetId]);
+    return () => controller.abort();
+  }, [dataset?.datasetId, attempt]);
 
   if (!dataset?.datasetId) return null;
 
@@ -75,7 +74,28 @@ export function DatasetCharts() {
           {chosen ? chosen.name : "Feature distributions"}
         </h2>
       </div>
-      {error ? <p className="mt-3 text-sm text-[#7A3E32]">{error}</p> : null}
+      {error ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <p className="text-sm text-[#7A3E32]">{error}</p>
+          <button
+            type="button"
+            onClick={() => setAttempt((value) => value + 1)}
+            className="border border-[#D8D6CF] bg-white px-3 py-1 text-sm text-[#171717] transition-colors duration-150 ease-out hover:bg-[#F1EFE9]"
+          >
+            Try again
+          </button>
+        </div>
+      ) : null}
+      {loading ? (
+        <div role="status" aria-live="polite" className="mt-4">
+          <p className="text-sm text-[#66645F]">Drawing the feature distribution graphs… this can take a few seconds.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: Math.min(Math.max(dataset.headers.length, 1), 6) }, (_, index) => (
+              <div key={index} className="aspect-[3/2] animate-pulse rounded-xl border border-[#D8D6CF] bg-[#F1EFE9]" />
+            ))}
+          </div>
+        </div>
+      ) : null}
       {chosen ? (
         <figure className="mt-4 w-fit max-w-full overflow-hidden rounded-xl border border-[#D8D6CF] bg-white">
           <img
@@ -117,6 +137,59 @@ export function DatasetCharts() {
       ) : null}
     </section>
   );
+}
+
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+
+// The ML service runs as a serverless function: the first request after a cold start (or a
+// transient gateway error) can fail or be slow, so retry a couple of times before giving up.
+async function loadFigures(datasetId: string, signal: AbortSignal, retries = 2): Promise<Figures> {
+  for (let tryIndex = 0; ; tryIndex += 1) {
+    let response: Response;
+    try {
+      response = await fetch(apiUrl("/visualize/dataset"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ datasetId }),
+        signal,
+      });
+    } catch (caught) {
+      if (signal.aborted) throw caught;
+      if (tryIndex < retries) {
+        await wait(1500 * (tryIndex + 1), signal);
+        continue;
+      }
+      throw new Error("The chart service could not be reached. Try again.");
+    }
+    if (response.ok) {
+      const body = (await response.json()) as Figures;
+      return { ...body, distributions: body.distributions ?? [], notes: body.notes ?? [] };
+    }
+    if (RETRYABLE_STATUS.has(response.status) && tryIndex < retries) {
+      await wait(1500 * (tryIndex + 1), signal);
+      continue;
+    }
+    // Error bodies are not always JSON (e.g. a gateway timeout page), so read them as text.
+    const text = await response.text();
+    let detail: string | undefined;
+    try {
+      const parsed = JSON.parse(text) as { detail?: unknown };
+      if (typeof parsed.detail === "string") detail = parsed.detail;
+    } catch {
+      detail = undefined;
+    }
+    throw new Error(detail ?? `The dataset charts could not be drawn (HTTP ${response.status}).`);
+  }
+}
+
+function wait(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const timer = window.setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      window.clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    });
+  });
 }
 
 function Chart({ title, image }: { title: string; image: string | null }) {
