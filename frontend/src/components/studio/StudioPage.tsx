@@ -21,7 +21,7 @@ export function StudioShell() {
       <ParticleField />
       <Decor />
       <Header />
-      <main className="relative z-10 mx-auto w-full min-w-0 max-w-[1360px] px-6 pt-16 pb-24 md:px-12">
+      <main id="main-content" className="relative z-10 mx-auto w-full min-w-0 max-w-[1360px] px-6 pt-16 pb-24 md:px-12">
         <Routes>
           <Route path="/" element={<UploadPage />} />
           <Route path="/configure" element={<ConfigurePage />} />
@@ -101,8 +101,14 @@ function PredictPage() {
 
 function Missing({ step, to }: { step: string; to: string }) {
   return (
-    <p className="rounded-xl border border-[#D8D6CF] bg-white px-4 py-6 text-sm text-[#171717]">
-      {step} before this page. <NavLink to={to} className="font-semibold underline">Go back</NavLink>
+    <p
+      role="status"
+      className="rounded-xl border border-[#D8D6CF] bg-white px-4 py-6 text-sm text-[#171717]"
+    >
+      {step} before opening this step.{" "}
+      <NavLink to={to} className="font-semibold underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+        Go back
+      </NavLink>
     </p>
   );
 }
@@ -121,17 +127,21 @@ function Decor() {
 function Header() {
   return (
     <header className="sticky top-0 z-30 flex min-h-20 flex-wrap items-center gap-4 border-b border-[#D8D6CF] bg-[#F7F6F2] px-6 py-3 md:px-12">
-      <NavLink to="/" className="text-xl font-bold tracking-tight text-[#171717]">
+      <NavLink
+        to="/"
+        className="text-xl font-bold tracking-tight text-[#171717] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        aria-label="Bench home"
+      >
         Bench
       </NavLink>
-      <nav aria-label="Workflow" className="flex flex-wrap items-center gap-1">
+      <nav aria-label="Workflow steps" className="flex flex-wrap items-center gap-1">
         {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
             end={link.end}
             className={({ isActive }) =>
-              `h-10 px-2 text-sm font-medium sm:px-3 ${isActive ? "border-b-2 border-[#171717] text-[#171717]" : "text-[#85827B]"}`
+              `h-10 px-2 text-sm font-medium sm:px-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${isActive ? "border-b-2 border-[#171717] text-[#171717]" : "text-[#85827B]"}`
             }
           >
             {link.label}
