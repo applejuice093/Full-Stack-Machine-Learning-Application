@@ -1,6 +1,12 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
+import { ZodError } from "zod";
 import { env } from "../config/env.js";
+import {
+  predictBodySchema,
+  storeBodySchema,
+  trainBodySchema,
+} from "../validators/datasets.js";
 
 // Vercel Functions accept request bodies up to 4.5 MB, so uploads are capped at 4 MB.
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
@@ -12,34 +18,55 @@ const upload = multer({
 
 export const datasetRouter = Router();
 
-async function forwardJson(req: Request, res: Response, path: string) {
+function validationError(res: Response, error: ZodError) {
+  const first = error.issues[0];
+  const path = first?.path?.length ? `${first.path.join(".")}: ` : "";
+  res.status(400).json({ detail: `${path}${first?.message ?? "Invalid request body."}` });
+}
+
+async function forwardJson(req: Request, res: Response, path: string, body: unknown) {
   try {
     const response = await fetch(`${env.ML_SERVICE_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(body),
     });
-    const body = await response.text();
-    res.status(response.status).type("application/json").send(body);
+    const text = await response.text();
+    res.status(response.status).type("application/json").send(text);
   } catch {
     res.status(503).json({ detail: "The ML service is not running." });
   }
 }
 
 datasetRouter.post("/datasets/store", async (req, res) => {
-  await forwardJson(req, res, "/datasets/store");
+  const parsed = storeBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    validationError(res, parsed.error);
+    return;
+  }
+  await forwardJson(req, res, "/datasets/store", parsed.data);
 });
 
 datasetRouter.post("/train", async (req, res) => {
-  await forwardJson(req, res, "/train");
+  const parsed = trainBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    validationError(res, parsed.error);
+    return;
+  }
+  await forwardJson(req, res, "/train", parsed.data);
 });
 
 datasetRouter.post("/predict", async (req, res) => {
-  await forwardJson(req, res, "/predict");
+  const parsed = predictBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    validationError(res, parsed.error);
+    return;
+  }
+  await forwardJson(req, res, "/predict", parsed.data);
 });
 
 datasetRouter.post("/visualize/dataset", async (req, res) => {
-  await forwardJson(req, res, "/visualize/dataset");
+  await forwardJson(req, res, "/visualize/dataset", req.body);
 });
 
 datasetRouter.get("/visualize/evaluation/:runId", async (req, res) => {

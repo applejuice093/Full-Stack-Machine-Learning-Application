@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { env } from "../config/env.js";
+import { errorHandler, notFoundHandler } from "../middleware/errorHandler.js";
 import { datasetRouter } from "../routes/datasets.js";
 import { healthRouter } from "../routes/health.js";
 
@@ -18,3 +19,5 @@ app.use(cors({ origin: allowedOrigins.includes("*") ? true : allowedOrigins }));
 app.use(express.json({ limit: "4mb" }));
 app.use(healthRouter);
 app.use(datasetRouter);
+app.use(notFoundHandler);
+app.use(errorHandler);

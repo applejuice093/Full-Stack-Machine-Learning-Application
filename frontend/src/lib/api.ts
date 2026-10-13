@@ -12,3 +12,35 @@ export function apiUrl(path: string): string {
 export function mlUrl(path: string): string {
   return `${ML_URL || API_URL}${path}`;
 }
+
+/** Prefer the server's `{ detail }` message; fall back to status text or a default. */
+export async function readErrorDetail(response: Response, fallback = "Request failed."): Promise<string> {
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      const body = (await response.json()) as { detail?: unknown; message?: unknown };
+      if (typeof body.detail === "string" && body.detail.trim()) return body.detail;
+      if (typeof body.message === "string" && body.message.trim()) return body.message;
+    } else {
+      const text = (await response.text()).trim();
+      if (text) return text.slice(0, 400);
+    }
+  } catch {
+    // ignore parse failures
+  }
+  return response.statusText?.trim() || fallback;
+}
+
+/** Fetch JSON from the API; throws an Error with a human-readable message on failure. */
+export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(apiUrl(path), init);
+  } catch {
+    throw new Error("Could not reach the API. Is the backend running?");
+  }
+  if (!response.ok) {
+    throw new Error(await readErrorDetail(response));
+  }
+  return (await response.json()) as T;
+}

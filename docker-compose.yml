@@ -1,3 +1,6 @@
+# Local PostgreSQL with pgvector for development.
+# Usage: docker compose up -d
+# Health: docker compose ps  (or pg_isready inside the container)
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -6,10 +9,18 @@ services:
       POSTGRES_PASSWORD: mlapp
       POSTGRES_DB: mlapp
     ports:
+      # Host:container — matches DATABASE_URL in .env.example
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Applied once on first empty-volume start
       - ./database/schema/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlapp -d mlapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 volumes:
   postgres_data:
