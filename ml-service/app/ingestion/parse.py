@@ -1,3 +1,11 @@
+"""Tabular dataset ingestion for Bench.
+
+`parse_bytes` turns an uploaded file into a `NormalizedDataset`. Supported
+formats include delimited text, Excel, ARFF, LIBSVM, NumPy, Parquet, Feather,
+Arrow, HDF5, MATLAB, JSON/JSONL, YAML, XML, and common stats packages.
+Multimedia and Python pickle formats are rejected.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -41,10 +49,22 @@ _LIBSVM_LINE = re.compile(r"^[^\s]+\s+(?:\d+:\S+\s*)+$")
 
 
 def parse_bytes(raw: bytes, filename: str, member: str | None = None) -> NormalizedDataset:
+    """Parse raw file bytes into a normalized tabular dataset.
+
+    Raises:
+        ParseError: empty payload, oversize file, unsupported or unsafe format,
+            or a format-specific read failure.
+    """
+    if not isinstance(raw, (bytes, bytearray)):
+        raise ParseError("Expected raw file bytes.")
     if not raw:
         raise ParseError("This file is empty.")
     if len(raw) > MAX_BYTES:
         raise ParseError("This file is larger than 8 MB. Use a smaller file.")
+
+    if not filename or not str(filename).strip():
+        filename = "dataset"
+    filename = str(filename).strip()
 
     extension = _extension(filename)
     if extension in UNSAFE:

@@ -194,3 +194,44 @@ def test_http_parse_endpoint() -> None:
     assert body["sourceFormat"] == "delimited"
     assert body["rowCount"] == 1
     assert body["schema"][0]["name"] == "rooms"
+
+
+def test_empty_and_header_only_csv() -> None:
+    with pytest.raises(ParseError, match="empty"):
+        parse_bytes(b"", "empty.csv")
+    with pytest.raises(ParseError, match="header row"):
+        parse_bytes(b"age,income\n", "header_only.csv")
+    with pytest.raises(ParseError, match="column needs a name"):
+        parse_bytes(b"age,\n20,1\n", "blank_header.csv")
+
+
+def test_blank_filename_defaults() -> None:
+    parsed = parse_bytes(b"age,income\n20,50000\n", "   ")
+    assert parsed.headers == ["age", "income"]
+    assert parsed.row_count == 1
+
+
+def test_oversized_payload_rejected() -> None:
+    # Just over the 8 MB cap
+    huge = b"a,b\n" + (b"1,2\n" * (2 * 1024 * 1024))
+    assert len(huge) > 8 * 1024 * 1024
+    with pytest.raises(ParseError, match="larger than 8 MB"):
+        parse_bytes(huge, "huge.csv")
+
+
+def test_http_parse_rejects_empty_file() -> None:
+    response = client.post(
+        "/dataset/parse",
+        files={"file": ("empty.csv", b"", "text/csv")},
+    )
+    assert response.status_code == 400
+    assert "empty" in response.json()["detail"].lower()
+
+
+def test_http_parse_rejects_invalid_csv() -> None:
+    response = client.post(
+        "/dataset/parse",
+        files={"file": ("broken.csv", b"not a table at all", "text/csv")},
+    )
+    assert response.status_code == 400
+    assert "detail" in response.json()
