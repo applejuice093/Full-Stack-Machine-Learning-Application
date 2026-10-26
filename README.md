@@ -103,6 +103,7 @@ Copy `.env.example` to `.env`. Replace `GROQ_API_KEY`, `LANGFUSE_PUBLIC_KEY`, `L
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `ML_SERVICE_URL` | Python service base URL (Express → ML) |
+| `ML_TIMEOUT_MS` | How long Express waits for the ML service (default 120000) |
 | `CORS_ORIGIN` | Allowed browser origins for the Express API |
 | `CORS_ORIGINS` | Allowed browser origins for the ML service |
 | `GROQ_API_KEY` | Groq API key |

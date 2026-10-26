@@ -118,6 +118,7 @@ From `backend/src/config/env.ts`:
 |---|---|---|
 | `PORT` | `4000` | Listen port |
 | `ML_SERVICE_URL` | `http://localhost:8000` | Forward target |
+| `ML_TIMEOUT_MS` | `120000` | Upstream timeout; slower calls return 504 |
 | `CORS_ORIGIN` | `http://localhost:5173` | Browser origin |
 | `NODE_ENV` | `development` | Environment name |
 | `DATABASE_URL` | unset | Accepted, not queried |
