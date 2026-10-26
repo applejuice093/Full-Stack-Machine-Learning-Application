@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { ZodError } from "zod";
-import { env } from "../config/env.js";
 import { forwardToMl } from "../services/mlClient.js";
 import {
   predictBodySchema,
@@ -83,14 +82,5 @@ datasetRouter.post("/datasets/parse", uploadSingle, async (req, res) => {
     form.append("member", member);
   }
 
-  try {
-    const response = await fetch(`${env.ML_SERVICE_URL}/dataset/parse`, {
-      method: "POST",
-      body: form,
-    });
-    const body = await response.text();
-    res.status(response.status).type("application/json").send(body);
-  } catch {
-    res.status(503).json({ detail: "The ML service is not running." });
-  }
+  await forwardToMl(res, "/dataset/parse", { form });
 });
