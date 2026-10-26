@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -33,6 +34,16 @@ DATA_DIR = (_base_dir / "datasets") if _base_dir else _SERVICE_ROOT / "data" / "
 MODELS_DIR = (_base_dir / "models") if _base_dir else _REPO_ROOT / "models"
 
 BLOB_PREFIX = os.getenv("BLOB_PREFIX", "ml-service").strip("/")
+
+
+# Dataset and run ids are uuid4().hex strings. Checking them before building a
+# path keeps user input from reaching outside DATA_DIR / MODELS_DIR.
+_ID_PATTERN = re.compile(r"[a-f0-9]{32}")
+
+
+def is_valid_id(value: str) -> bool:
+    """True when ``value`` looks like a dataset or run id issued by this service."""
+    return bool(_ID_PATTERN.fullmatch(value))
 
 
 def blob_enabled() -> bool:
