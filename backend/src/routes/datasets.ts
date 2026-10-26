@@ -3,6 +3,8 @@ import multer from "multer";
 import { ZodError } from "zod";
 import { forwardToMl } from "../services/mlClient.js";
 import {
+  datasetFigureBodySchema,
+  mlIdSchema,
   predictBodySchema,
   storeBodySchema,
   trainBodySchema,
@@ -52,11 +54,22 @@ datasetRouter.post("/predict", async (req, res) => {
 });
 
 datasetRouter.post("/visualize/dataset", async (req, res) => {
-  await forwardToMl(res, "/visualize/dataset", { json: req.body });
+  const parsed = datasetFigureBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    validationError(res, parsed.error);
+    return;
+  }
+  await forwardToMl(res, "/visualize/dataset", { json: parsed.data });
 });
 
 datasetRouter.get("/visualize/evaluation/:runId", async (req, res) => {
-  await forwardToMl(res, `/visualize/evaluation/${req.params.runId}`);
+  // Validate before building the upstream URL so the id cannot add path segments.
+  const runId = mlIdSchema.safeParse(req.params.runId);
+  if (!runId.success) {
+    res.status(400).json({ detail: "Unknown trained model." });
+    return;
+  }
+  await forwardToMl(res, `/visualize/evaluation/${encodeURIComponent(runId.data)}`);
 });
 
 function uploadSingle(req: Request, res: Response, next: (err?: unknown) => void) {
