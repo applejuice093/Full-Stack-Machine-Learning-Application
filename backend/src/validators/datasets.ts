@@ -6,11 +6,27 @@ export const mlIdSchema = z
   .regex(/^[a-f0-9]{32}$/, "must be an id returned by the ML service");
 
 /** Body for POST /datasets/store (browser-parsed CSV fallback). */
-export const storeBodySchema = z.object({
-  filename: z.string().min(1),
-  headers: z.array(z.string()).min(1),
-  rows: z.array(z.array(z.string())).min(1),
-});
+export const storeBodySchema = z
+  .object({
+    filename: z.string().min(1).max(255),
+    headers: z
+      .array(z.string().trim().min(1, "column names cannot be blank"))
+      .min(1)
+      .refine((headers) => new Set(headers).size === headers.length, "column names must be unique"),
+    rows: z.array(z.array(z.string())).min(1),
+  })
+  .superRefine((body, ctx) => {
+    // A ragged row would otherwise fail later inside pandas with a vague error.
+    const width = body.headers.length;
+    const bad = body.rows.findIndex((row) => row.length !== width);
+    if (bad !== -1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["rows", bad],
+        message: `row has ${body.rows[bad].length} values but there are ${width} columns`,
+      });
+    }
+  });
 
 /** Body for POST /train — mirrors the ML service TrainBody. */
 export const trainBodySchema = z.object({
