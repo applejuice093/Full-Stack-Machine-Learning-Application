@@ -9,6 +9,8 @@ const envSchema = z.object({
     .string()
     .default("http://localhost:8000")
     .transform((url) => url.replace(/\/+$/, "")),
+  // How long Express waits for the ML service before giving up (training can be slow).
+  ML_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   GROQ_API_KEY: z.string().optional(),
   LANGFUSE_SECRET_KEY: z.string().optional(),
   LANGFUSE_PUBLIC_KEY: z.string().optional(),
