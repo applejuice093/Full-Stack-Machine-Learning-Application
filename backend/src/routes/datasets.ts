@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from "express";
 import multer from "multer";
 import { ZodError } from "zod";
 import { env } from "../config/env.js";
+import { forwardToMl } from "../services/mlClient.js";
 import {
   predictBodySchema,
   storeBodySchema,
@@ -24,27 +25,13 @@ function validationError(res: Response, error: ZodError) {
   res.status(400).json({ detail: `${path}${first?.message ?? "Invalid request body."}` });
 }
 
-async function forwardJson(req: Request, res: Response, path: string, body: unknown) {
-  try {
-    const response = await fetch(`${env.ML_SERVICE_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const text = await response.text();
-    res.status(response.status).type("application/json").send(text);
-  } catch {
-    res.status(503).json({ detail: "The ML service is not running." });
-  }
-}
-
 datasetRouter.post("/datasets/store", async (req, res) => {
   const parsed = storeBodySchema.safeParse(req.body);
   if (!parsed.success) {
     validationError(res, parsed.error);
     return;
   }
-  await forwardJson(req, res, "/datasets/store", parsed.data);
+  await forwardToMl(res, "/datasets/store", { json: parsed.data });
 });
 
 datasetRouter.post("/train", async (req, res) => {
@@ -53,7 +40,7 @@ datasetRouter.post("/train", async (req, res) => {
     validationError(res, parsed.error);
     return;
   }
-  await forwardJson(req, res, "/train", parsed.data);
+  await forwardToMl(res, "/train", { json: parsed.data });
 });
 
 datasetRouter.post("/predict", async (req, res) => {
@@ -62,21 +49,15 @@ datasetRouter.post("/predict", async (req, res) => {
     validationError(res, parsed.error);
     return;
   }
-  await forwardJson(req, res, "/predict", parsed.data);
+  await forwardToMl(res, "/predict", { json: parsed.data });
 });
 
 datasetRouter.post("/visualize/dataset", async (req, res) => {
-  await forwardJson(req, res, "/visualize/dataset", req.body);
+  await forwardToMl(res, "/visualize/dataset", { json: req.body });
 });
 
 datasetRouter.get("/visualize/evaluation/:runId", async (req, res) => {
-  try {
-    const response = await fetch(`${env.ML_SERVICE_URL}/visualize/evaluation/${req.params.runId}`);
-    const body = await response.text();
-    res.status(response.status).type("application/json").send(body);
-  } catch {
-    res.status(503).json({ detail: "The ML service is not running." });
-  }
+  await forwardToMl(res, `/visualize/evaluation/${req.params.runId}`);
 });
 
 function uploadSingle(req: Request, res: Response, next: (err?: unknown) => void) {
