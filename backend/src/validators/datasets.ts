@@ -14,7 +14,7 @@ export const storeBodySchema = z.object({
 
 /** Body for POST /train — mirrors the ML service TrainBody. */
 export const trainBodySchema = z.object({
-  datasetId: z.string().min(1),
+  datasetId: mlIdSchema,
   target: z.string().min(1),
   features: z.array(z.string()).min(1),
   task: z.enum(["classification", "regression"]),
@@ -36,8 +36,10 @@ export const datasetFigureBodySchema = z.object({
 
 /** Body for POST /predict. */
 export const predictBodySchema = z.object({
-  runId: z.string().min(1),
-  values: z.record(z.string(), z.union([z.string(), z.number()])),
+  runId: mlIdSchema,
+  values: z
+    .record(z.string(), z.union([z.string(), z.number()]))
+    .refine((values) => Object.keys(values).length > 0, "enter at least one input value"),
 });
 
 export type StoreBody = z.infer<typeof storeBodySchema>;
