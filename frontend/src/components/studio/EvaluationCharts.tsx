@@ -15,6 +15,9 @@ export function EvaluationCharts({ runId }: { runId: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Clear the previous run's charts and error so a retrain never shows stale results.
+    setImages({});
+    setError(null);
     void fetch(apiUrl(`/visualize/evaluation/${encodeURIComponent(runId)}`))
       .then(async (response) => {
         const body = (await response.json()) as { images?: Record<string, string>; detail?: string };
