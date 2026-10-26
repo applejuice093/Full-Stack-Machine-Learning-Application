@@ -2,7 +2,7 @@
 
 The browser calls Express. Express calls FastAPI. In local development the Vite server on port 5173 proxies the paths below to port 4000, except that a second parse attempt may call `/dataset/parse` on port 8000 directly if Express did not answer.
 
-Errors use `{ "detail": "message" }`. A 400 means the file or the request was rejected. A 503 means Express could not reach FastAPI.
+Errors use `{ "detail": "message" }`. A 400 means the file or the request was rejected. A 503 means Express could not reach FastAPI, a 504 means FastAPI did not answer within `ML_TIMEOUT_MS`, and a 502 means it answered with something other than JSON. See the [route index](api/README.md) for the full list.
 
 ## User flow
 
