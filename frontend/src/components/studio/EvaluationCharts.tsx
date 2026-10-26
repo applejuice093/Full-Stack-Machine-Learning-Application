@@ -15,7 +15,7 @@ export function EvaluationCharts({ runId }: { runId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(apiUrl(`/visualize/evaluation/${runId}`))
+    void fetch(apiUrl(`/visualize/evaluation/${encodeURIComponent(runId)}`))
       .then(async (response) => {
         const body = (await response.json()) as { images?: Record<string, string>; detail?: string };
         if (!response.ok) throw new Error(body.detail ?? "The evaluation charts could not be loaded.");
