@@ -36,10 +36,26 @@ class TrainBody(BaseModel):
     dropDuplicates: bool = True
 
 
+def _table_problem(headers: list[str], rows: list[list[str]]) -> str | None:
+    """Explain why a browser-parsed table cannot be stored, or return None."""
+    names = [header.strip() for header in headers]
+    if any(not name for name in names):
+        return "Column names cannot be blank."
+    if len(set(names)) != len(names):
+        return "Column names must be unique."
+    for index, row in enumerate(rows, start=1):
+        if len(row) != len(headers):
+            return f"Row {index} has {len(row)} values but there are {len(headers)} columns."
+    return None
+
+
 @router.post("/datasets/store")
 def store_dataset(body: StoreBody) -> dict:
     if not body.headers or not body.rows:
         raise HTTPException(status_code=400, detail="The table is empty.")
+    problem = _table_problem(body.headers, body.rows)
+    if problem:
+        raise HTTPException(status_code=400, detail=problem)
     try:
         dataset_id = save_table(body.headers, body.rows, body.filename)
     except Exception as exc:
