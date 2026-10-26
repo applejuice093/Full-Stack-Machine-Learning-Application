@@ -90,8 +90,13 @@ datasetRouter.post("/datasets/parse", uploadSingle, async (req, res) => {
 
   const form = new FormData();
   form.append("file", new Blob([new Uint8Array(req.file.buffer)]), req.file.originalname);
-  const member = req.body?.member;
-  if (typeof member === "string" && member.length > 0) {
+  // `member` picks one file inside an uploaded archive (zip/tar).
+  const member = typeof req.body?.member === "string" ? req.body.member.trim() : "";
+  if (member.length > 1024) {
+    res.status(400).json({ detail: "member: archive path is too long." });
+    return;
+  }
+  if (member.length > 0) {
     form.append("member", member);
   }
 
