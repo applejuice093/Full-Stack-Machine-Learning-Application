@@ -6,10 +6,11 @@ import time
 
 from fastapi import APIRouter
 
+from app import __version__
+
 router = APIRouter()
 
 _STARTED_AT = time.monotonic()
-_VERSION = "0.1.0"
 
 
 @router.get("/health")
@@ -18,6 +19,6 @@ def health() -> dict[str, object]:
     return {
         "status": "ok",
         "service": "ml-service",
-        "version": _VERSION,
+        "version": __version__,
         "uptimeSeconds": round(time.monotonic() - _STARTED_AT, 3),
     }

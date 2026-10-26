@@ -3,6 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import __version__
 from app.api.dataset import router as dataset_router
 from app.api.health import router as health_router
 from app.api.train import router as train_router
@@ -15,7 +16,7 @@ CORS_ORIGINS = [
     if origin.strip()
 ]
 
-app = FastAPI(title="ML Service", version="0.1.0")
+app = FastAPI(title="ML Service", version=__version__)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
