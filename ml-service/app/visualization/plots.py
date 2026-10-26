@@ -13,7 +13,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import roc_curve
 
-from app.core.storage import MODELS_DIR, fetch, persist
+from app.core.storage import MODELS_DIR, fetch, is_valid_id, persist
 
 INK = "#171717"
 PAPER = "#F7F6F2"
@@ -86,7 +86,7 @@ def save_evaluation_figures(run_id: str, task: str, y_test, prediction, pipeline
 
 
 def load_evaluation_figures(run_id: str) -> dict[str, str]:
-    if not __import__("re").fullmatch(r"^[a-f0-9]{32}$", run_id):
+    if not is_valid_id(run_id):
         raise FileNotFoundError("Unknown trained model.")
     images: dict[str, str] = {}
     for name in ("confusion", "roc", "actual", "residual"):

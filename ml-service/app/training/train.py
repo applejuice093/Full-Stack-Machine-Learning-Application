@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 from uuid import uuid4
 
@@ -21,7 +20,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 
-from app.core.storage import MODELS_DIR, fetch, persist
+from app.core.storage import MODELS_DIR, fetch, is_valid_id, persist
 from app.training.pipeline import build_pipeline, column_roles
 from app.training.registry import default_search, estimator, model_task, search_space
 from app.training.store import load_table
@@ -257,7 +256,7 @@ def evaluate_holdout(task: str, y_test: pd.Series, prediction, pipeline, x_test:
 
 
 def predict_row(run_id: str, values: dict) -> dict:
-    if not re.fullmatch(r"^[a-f0-9]{32}$", run_id):
+    if not is_valid_id(run_id):
         raise TrainError("Unknown trained model.")
     path = MODELS_DIR / f"{run_id}.joblib"
     if not fetch(path):

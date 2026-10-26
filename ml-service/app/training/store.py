@@ -1,15 +1,11 @@
 from __future__ import annotations
 
 import json
-import re
 from uuid import uuid4
 
 import pandas as pd
 
-from app.core.storage import DATA_DIR, fetch, persist
-
-_ID = re.compile(r"^[a-f0-9]{32}$")
-
+from app.core.storage import DATA_DIR, fetch, is_valid_id, persist
 
 def save_table(headers: list[str], rows: list[list[str]], filename: str) -> str:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -28,7 +24,7 @@ def save_table(headers: list[str], rows: list[list[str]], filename: str) -> str:
 
 
 def load_table(dataset_id: str) -> pd.DataFrame:
-    if not _ID.fullmatch(dataset_id):
+    if not is_valid_id(dataset_id):
         raise FileNotFoundError("Unknown dataset.")
     path = DATA_DIR / f"{dataset_id}.parquet"
     if not fetch(path):
